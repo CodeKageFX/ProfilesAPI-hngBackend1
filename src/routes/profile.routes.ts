@@ -1,4 +1,4 @@
-import * as ProfileControllers from "../controller/profile.controller"
+import * as ProfileControllers from "../controller/profile.controller.js"
 import { Router } from "express"
 
 const profile_router = Router()

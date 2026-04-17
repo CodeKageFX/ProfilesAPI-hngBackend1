@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import profile_router from "./routes/profile.routes";
+import profile_router from "./routes/profile.routes.js";
 
 const app = express();
 

@@ -1,7 +1,7 @@
-import * as ProfileServices from "../services/profiles.service";
+import * as ProfileServices from "../services/profiles.service.js";
 import { Request, Response } from "express";
-import { genderApi, ageApi, nationalityApi } from "../lib/helpers";
-import { prisma } from "../lib/prisma";
+import { genderApi, ageApi, nationalityApi } from "../lib/helpers.js";
+import { prisma } from "../lib/prisma.js";
 import { v7 as uuidv7 } from 'uuid';
 
 export async function createProfile(req: Request, res: Response) {
