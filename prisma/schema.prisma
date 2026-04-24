@@ -10,7 +10,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
 }
 
 
@@ -23,6 +22,7 @@ model Profile {
   sample_size           Int
   age_group             String
   country_id            String
+  country_name          String
   country_probability   Float
   created_at            DateTime @default(now())
 }

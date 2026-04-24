@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { genderApi, ageApi, nationalityApi } from "../lib/helpers.js";
 import { prisma } from "../lib/prisma.js";
 import { v7 as uuidv7 } from 'uuid';
+import { parseNaturalLanguage } from "../utils/queryParser.js";
 
 export async function createProfile(req: Request, res: Response) {
     try {
@@ -90,6 +91,7 @@ export async function createProfile(req: Request, res: Response) {
             age: age.age,
             age_group: age.age ? (age.age <= 12 ? "child" : age.age <= 19 ? "teenager" : age.age <= 59 ? "adult" : "senior") : "unknown",
             country_id: topCountry.country_id,
+            country_name: topCountry.country_id,
             country_probability
         })
 
@@ -108,17 +110,29 @@ export async function createProfile(req: Request, res: Response) {
 
 export async function getAllProfiles(req: Request, res: Response) {
     try {
-        const {  gender, age_group, country_id } = req.query
+        const {  gender, age_group, country_id, min_age, max_age, min_gender_probability, min_country_probability, sort_by, order, page, limit } = req.query
 
-        const profiles = await ProfileServices.getAllProfiles(
+        const {profiles, total} = await ProfileServices.getAllProfiles(
             gender as string | undefined,
             age_group as string | undefined,
-            country_id as string | undefined
+            country_id as string | undefined,
+
+            min_age ? Number(min_age) : undefined,
+            max_age ? Number(max_age) : undefined,
+            min_gender_probability ? Number(min_gender_probability) : undefined,
+            min_country_probability ? Number(min_country_probability) : undefined,
+
+            sort_by as any, 
+            order as 'asc' | 'desc',
+            page ? Number(page) : undefined,
+            limit ? Number(limit) : undefined
         )
 
         res.status(200).json({
             status: "success",
-            count: profiles.length,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            total,
             data: profiles
         })
     } catch (error) {
@@ -181,5 +195,48 @@ export async function deleteProfileById(req: Request, res: Response) {
             message: "Failed to delete profile",
             error: error instanceof Error ? error.message : String(error)
         })
+    }
+}
+
+export async function searchProfiles(req: Request, res: Response) {
+    try {
+        const { q, page, limit } = req.query;
+
+        if (!q || typeof q !== 'string' || q.trim() === '') {
+            return res.status(400).json({ status: "error", message: "Missing or empty parameter" });
+        }
+
+        const filters = parseNaturalLanguage(q);
+
+        if (!filters) {
+            return res.status(200).json({ status: "error", message: "Unable to interpret query" });
+        }
+
+        const { profiles, total } = await ProfileServices.getAllProfiles(
+            filters.gender,
+            filters.age_group,
+            filters.country_id,
+            filters.min_age,
+            filters.max_age,
+            undefined,
+            undefined,
+            'created_at',
+            'desc',
+            Number(page) || 1,
+            Number(limit) || 10
+        );
+
+        res.status(200).json({
+            status: "success",
+            meta: {
+                total_records: total,
+                current_page: Number(page) || 1,
+                total_pages: Math.ceil(total / (Number(limit) || 10))
+            },
+            data: profiles
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: "error", message: "Server failure" });
     }
 }
